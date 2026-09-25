@@ -1,38 +1,19 @@
 --[[
-    UnSky UI Library  •  v3.0
-    Memesense-styled Roblox UI.
+    UnSky UI Library  •  v3.1
+    Memesense-styled Roblox UI. Parents to CoreGui with PlayerGui fallback.
 
     LOAD:
         local Library = loadstring(game:HttpGet("URL"))()
 
     EXAMPLE:
-        local Win = Library:Window({
-            Title     = "Meme",
-            Subtitle  = "Sense",
-            ToggleKey = Enum.KeyCode.Delete,
-        })
+        local Win = Library:Window({ Title = "Meme", Subtitle = "Sense" })
 
-        -- Tab: name, optional icon (any unicode/text character)
         local Players = Win:Tab("Players", "P")
-        Players:Section("General", 2)  -- 2-column grid
-        Players:Toggle("Enable",        false, function(v) end, Enum.KeyCode.G)
-        Players:Toggle("Through wall",  false, function(v) end)
-        Players:Toggle("Box",           true,  function(v) end)
-        Players:Toggle("Health bar",    true,  function(v) end)
-
+        Players:Section("General", 1)
+        Players:Toggle("Enable", false, function(v) end, Enum.KeyCode.G)
         Players:Section("Flags", 2)
-        Players:Toggle("Bomb",   false, function(v) end)
-        Players:Toggle("Health", false, function(v) end)
-        Players:Toggle("Ammo",   false, function(v) end)
-        Players:Toggle("Reload", false, function(v) end)
-
-        local Aim = Win:Tab("Aim Assist", "A")
-        Aim:Section("Aimbot")
-        Aim:Toggle("Enable", false, function(v) end, Enum.KeyCode.E)
-        Aim:Slider("FOV", 0, 180, 90, function(v) end)
-        Aim:Dropdown("Hitbox", {"Head","Neck","Chest","Pelvis"}, "Head", function(v) end)
-        Aim:ColorPicker("Target Color", Color3.fromRGB(255,0,0), function(c) end)
-        Aim:Button("Reset", function() end)
+        Players:Toggle("Bomb",  false, function(v) end)
+        Players:Toggle("Ammo",  false, function(v) end)
 ]]
 
 -- ==========================================================================
@@ -44,6 +25,15 @@ local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService      = game:GetService("HttpService")
 local LocalPlayer      = Players.LocalPlayer
+
+-- ==========================================================================
+-- CONTAINER (CoreGui first, PlayerGui fallback)
+-- ==========================================================================
+local function getContainer()
+    local ok, cg = pcall(function() return game:GetService("CoreGui") end)
+    if ok and cg then return cg end
+    return LocalPlayer:WaitForChild("PlayerGui")
+end
 
 -- ==========================================================================
 -- THEME
@@ -114,7 +104,7 @@ end
 -- LIBRARY TABLE
 -- ==========================================================================
 local Library = {}
-Library.Version = "3.0.0"
+Library.Version = "3.1.0"
 Library.Theme   = Theme
 
 -- ==========================================================================
@@ -146,7 +136,7 @@ function Library:Window(cfg)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         ResetOnSpawn = false,
         IgnoreGuiInset = true,
-    }, LocalPlayer:WaitForChild("PlayerGui"))
+    }, getContainer())
     win.Gui = gui
 
     -- === Main frame ===
@@ -238,8 +228,8 @@ function Library:Window(cfg)
         return b
     end
 
-    local saveBtn    = headerBtn("Save", 1, 54)
-    local themeBtn   = headerBtn("...",  2, 32)
+    local saveBtn  = headerBtn("Save", 1, 54)
+    local themeBtn = headerBtn("...",  2, 32)
 
     -- === Divider ===
     local divider = new("Frame", {
@@ -342,9 +332,8 @@ function Library:Window(cfg)
         local tab = {}
         tab.Name     = name
         tab.Window   = win
-        tab._current = nil  -- current section
+        tab._current = nil
 
-        -- Sidebar button
         local btn = new("TextButton", {
             Size = UDim2.new(1, 0, 0, 30),
             BackgroundColor3 = Theme.Element,
@@ -355,7 +344,6 @@ function Library:Window(cfg)
         }, sidebar)
         corner(btn, 6)
 
-        -- Icon (text glyph)
         if icon then
             new("TextLabel", {
                 Size = UDim2.new(0, 20, 1, 0),
@@ -390,7 +378,6 @@ function Library:Window(cfg)
         }, btn)
         corner(indicator, 2)
 
-        -- Page
         local page = new("ScrollingFrame", {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
@@ -445,7 +432,7 @@ function Library:Window(cfg)
         end))
 
         -- ==============================================================
-        -- SECTION (returns container that supports columns)
+        -- SECTION
         -- ==============================================================
         function tab:Section(title, columns)
             columns = columns or 1
@@ -460,7 +447,6 @@ function Library:Window(cfg)
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }, sect)
 
-            -- title
             new("TextLabel", {
                 Size = UDim2.new(1, -6, 0, 20),
                 BackgroundTransparency = 1,
@@ -473,7 +459,6 @@ function Library:Window(cfg)
                 Parent = sect,
             })
 
-            -- items container
             local items = new("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
                 BackgroundTransparency = 1,
@@ -495,20 +480,15 @@ function Library:Window(cfg)
                 }, items)
             end
 
-            sect._items   = items
-            sect._columns = columns
-
             tab._current = items
             return sect
         end
 
-        -- helper: get parent container for new elements
         local function getParent()
             if tab._current then return tab._current end
             return page
         end
 
-        -- helper: build a row frame
         local function makeRow(height)
             local row = new("Frame", {
                 Size = UDim2.new(1, 0, 0, height or 30),
@@ -527,7 +507,7 @@ function Library:Window(cfg)
         end
 
         -- ==============================================================
-        -- TOGGLE  (checkbox style, matches reference)
+        -- TOGGLE
         -- ==============================================================
         function tab:Toggle(label, default, callback, bindKey)
             local state     = default and true or false
@@ -536,7 +516,6 @@ function Library:Window(cfg)
 
             local row = makeRow(30)
 
-            -- checkbox
             local box = new("Frame", {
                 Size = UDim2.new(0, 16, 0, 16),
                 Position = UDim2.new(0, 8, 0.5, -8),
@@ -558,7 +537,6 @@ function Library:Window(cfg)
                 Parent = box,
             })
 
-            -- label
             new("TextLabel", {
                 Size = UDim2.new(1, bindKey and -80 or -40, 1, 0),
                 Position = UDim2.new(0, 32, 0, 0),
@@ -571,7 +549,6 @@ function Library:Window(cfg)
                 Parent = row,
             })
 
-            -- optional keybind button on right
             local keyBtn
             if bindKey ~= nil then
                 keyBtn = new("TextButton", {
@@ -608,7 +585,6 @@ function Library:Window(cfg)
                 if fire ~= false then call(callback, state) end
             end
 
-            -- click row to toggle (skip if keybind button area)
             table.insert(win._conns, row.InputBegan:Connect(function(inp)
                 if isMouse(inp) then
                     if keyBtn and inp.Position.X >= keyBtn.AbsolutePosition.X then
@@ -618,7 +594,6 @@ function Library:Window(cfg)
                 end
             end))
 
-            -- keybind listener
             if bindKey ~= nil then
                 table.insert(win._conns, UserInputService.InputBegan:Connect(function(inp, gp)
                     if gp then return end
@@ -897,8 +872,8 @@ function Library:Window(cfg)
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }, list)
             new("UIPadding", {
-                PaddingLeft  = UDim.new(0, 4),
-                PaddingRight = UDim.new(0, 4),
+                PaddingLeft   = UDim.new(0, 4),
+                PaddingRight  = UDim.new(0, 4),
                 PaddingBottom = UDim.new(0, 4),
             }, list)
 
@@ -965,7 +940,7 @@ function Library:Window(cfg)
         end
 
         -- ==============================================================
-        -- KEYBIND (standalone)
+        -- KEYBIND
         -- ==============================================================
         function tab:Keybind(label, default, callback)
             local current   = default or Enum.KeyCode.Unknown
@@ -1091,7 +1066,6 @@ function Library:Window(cfg)
                 Parent = row,
             })
 
-            -- hue slider
             local hueBg = new("Frame", {
                 Size = UDim2.new(1, -20, 0, 10),
                 Position = UDim2.new(0, 10, 0, 8),
@@ -1122,7 +1096,6 @@ function Library:Window(cfg)
             corner(hueKnob, 6)
             stroke(hueKnob, Color3.fromRGB(0, 0, 0), 2, 0.5)
 
-            -- saturation/value square
             local svBg = new("Frame", {
                 Size = UDim2.new(1, -20, 0, 70),
                 Position = UDim2.new(0, 10, 0, 26),
@@ -1156,7 +1129,6 @@ function Library:Window(cfg)
             corner(svKnob, 5)
             stroke(svKnob, Color3.fromRGB(0, 0, 0), 1, 0.5)
 
-            -- hex input
             local hexBox = new("TextBox", {
                 Size = UDim2.new(1, -20, 0, 20),
                 Position = UDim2.new(0, 10, 0, 104),
@@ -1179,7 +1151,6 @@ function Library:Window(cfg)
                 call(callback, c)
             end
 
-            -- hue drag
             local hueDrag = false
             table.insert(win._conns, hueBg.InputBegan:Connect(function(inp)
                 if isMouse(inp) then
@@ -1207,7 +1178,6 @@ function Library:Window(cfg)
                 if isMouse(inp) then hueDrag = false end
             end))
 
-            -- sv drag
             local svDrag = false
             table.insert(win._conns, svBg.InputBegan:Connect(function(inp)
                 if isMouse(inp) then
@@ -1241,14 +1211,12 @@ function Library:Window(cfg)
                 if isMouse(inp) then svDrag = false end
             end))
 
-            -- hex input
             table.insert(win._conns, hexBox.FocusLost:Connect(function()
                 local ok, c = pcall(Color3.fromHex, hexBox.Text)
                 if ok then updateColor(c, true)
                 else hexBox.Text = color:ToHex() end
             end))
 
-            -- panel open/close
             table.insert(win._conns, headerBtn.MouseButton1Click:Connect(function()
                 open = not open
                 if open then
@@ -1359,7 +1327,6 @@ function Library:Window(cfg)
         gui:Destroy()
     end
 
-    -- Save button
     table.insert(win._conns, saveBtn.MouseButton1Click:Connect(function()
         if win:SaveConfig("default") then
             Library:Notify("Config saved")
@@ -1368,7 +1335,6 @@ function Library:Window(cfg)
         end
     end))
 
-    -- Theme button (accent picker popup)
     table.insert(win._conns, themeBtn.MouseButton1Click:Connect(function()
         local popup = new("Frame", {
             Size = UDim2.new(0, 200, 0, 80),
@@ -1441,9 +1407,7 @@ function Library:Window(cfg)
             local p = math.clamp((x - hue.AbsolutePosition.X) / hue.AbsoluteSize.X, 0, 1)
             hueKnob.Position = UDim2.new(p, -8, 0.5, -8)
             local c = Color3.fromHSV(p, 1, 1)
-            -- update visuals that use accent
             divider.BackgroundColor3 = c
-            win.Frame:FindFirstChildOfClass("UIStroke")
         end
 
         table.insert(win._conns, hue.InputBegan:Connect(function(inp)
@@ -1472,7 +1436,7 @@ end
 function Library:Notify(text, duration)
     duration = duration or 3
 
-    local pg = LocalPlayer:WaitForChild("PlayerGui")
+    local pg = getContainer()
     local nGui = pg:FindFirstChild("UnSkyNotifications")
     if not nGui then
         nGui = new("ScreenGui", {
@@ -1489,7 +1453,7 @@ function Library:Notify(text, duration)
         new("UIListLayout", {
             Padding = UDim.new(0, 8),
             HorizontalAlignment = Enum.HorizontalAlignment.Right,
-            VerticalAlignment = Enum.VerticalAlignment.Top,
+            VerticalAlignment   = Enum.VerticalAlignment.Top,
             SortOrder = Enum.SortOrder.LayoutOrder,
         }, nGui:FindFirstChild("Container"))
     end
