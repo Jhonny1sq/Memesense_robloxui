@@ -296,6 +296,9 @@ function Library:Window(cfg)
     -- ======================================================================
     -- TAB
     -- ======================================================================
+        -- ======================================================================
+    -- TAB
+    -- ======================================================================
     function win:Tab(name)
         local tab = {}
         tab.Name      = name
@@ -361,14 +364,14 @@ function Library:Window(cfg)
         tab.Frame     = page
         tab.Button    = btn
         tab.Indicator = indicator
-        tab.Label     = btnLabel
+        tab.BtnLabel  = btnLabel   -- renamed from tab.Label
 
         -- Select
         function tab:Select()
             for _, t in ipairs(win.Tabs) do
                 t.Frame.Visible     = false
                 t.Indicator.Visible = false
-                t.Label.TextColor3  = Theme.TextDim
+                t.BtnLabel.TextColor3 = Theme.TextDim
                 tween(t.Button, { BackgroundTransparency = 1 }, 0.12)
             end
             page.Visible        = true
