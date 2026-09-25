@@ -17,6 +17,7 @@ local Theme = {
     AccentOn      = Color3.fromRGB(255, 50, 50),
     Text          = Color3.fromRGB(255, 255, 255),
     TextDim       = Color3.fromRGB(140, 140, 140),
+    TextMid       = Color3.fromRGB(190, 190, 190),
     Element       = Color3.fromRGB(18, 18, 18),
     ElementHover  = Color3.fromRGB(28, 28, 28),
     ElementActive = Color3.fromRGB(36, 36, 36),
@@ -48,7 +49,7 @@ local function isMouse(inp)
 end
 
 local Library = {}
-Library.Version = "5.1.0"
+Library.Version = "5.2.0"
 Library.Theme   = Theme
 
 function Library:Window(cfg)
@@ -306,7 +307,7 @@ function Library:Window(cfg)
                 Size = UDim2.new(1, 0, 0, 18),
                 BackgroundTransparency = 1,
                 Text = title or "",
-                TextColor3 = Theme.Text,
+                TextColor3 = Theme.TextMid,
                 TextSize = 13,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Left,
