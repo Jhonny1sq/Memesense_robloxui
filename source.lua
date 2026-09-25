@@ -1,9 +1,10 @@
 --[[
-    UnSky GUI Library  •  v2.1
-    Memesense-styled Roblox UI library.
+    UnSky GUI Library  •  v3.0
+    Memesense-styled Roblox UI library with Lucide icons, color picker,
+    integrated keybinds, and config save/load.
 
     Load:
-        local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jhonny1sq/Memesense_robloxui/refs/heads/main/source.lua"))()
+        local Library = loadstring(game:HttpGet("URL"))()
 
     Use:
         local Win = Library:Window({
@@ -12,13 +13,14 @@
             ToggleKey = Enum.KeyCode.Delete,
         })
 
-        local Main = Win:Tab("Main")
+        local Main = Win:Tab("Main", "gamepad-2")
         Main:Section("Visuals")
-        Main:Toggle("Enemy Glow", false, function(v) print(v) end)
+        Main:Toggle("Enemy Glow", false, function(v) print(v) end, Enum.KeyCode.G)
         Main:Button("Print Hi", function() print("hi") end)
         Main:Slider("FOV", 0, 180, 90, function(v) end)
         Main:Textbox("Name", "", function(v) end)
         Main:Dropdown("Hitbox", {"Head","Chest","Pelvis"}, "Head", function(v) end)
+        Main:ColorPicker("Accent", Color3.fromRGB(255, 0, 5), function(c) end)
         Main:Keybind("Aim Key", Enum.KeyCode.E, function(k) end)
 
         Library:Notify("loaded.", 4)
@@ -31,13 +33,56 @@ local Players          = game:GetService("Players")
 local RunService       = game:GetService("RunService")
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local HttpService      = game:GetService("HttpService")
 local LocalPlayer      = Players.LocalPlayer
+
+-- ==========================================================================
+-- LUCIDE ICONS
+-- sprite sheet, no asset uploading needed.
+-- ==========================================================================
+local LUCIDE_SHEET = "rbxassetid://15269177520"
+
+-- name -> {offsetX, offsetY, size}
+-- using 48px icons from the 48x48 grid
+local LucideIcons = {
+    ["keyboard"]      = Vector2.new(0, 0),
+    ["settings"]      = Vector2.new(48, 0),
+    ["palette"]       = Vector2.new(96, 0),
+    ["save"]          = Vector2.new(144, 0),
+    ["gamepad-2"]     = Vector2.new(192, 0),
+    ["crosshair"]     = Vector2.new(240, 0),
+    ["eye"]           = Vector2.new(288, 0),
+    ["eye-off"]       = Vector2.new(336, 0),
+    ["shield"]        = Vector2.new(384, 0),
+    ["sword"]         = Vector2.new(432, 0),
+    ["user"]          = Vector2.new(480, 0),
+    ["users"]         = Vector2.new(528, 0),
+    ["map"]           = Vector2.new(576, 0),
+    ["boxes"]         = Vector2.new(624, 0),
+    ["mouse-pointer"] = Vector2.new(672, 0),
+    ["list"]          = Vector2.new(720, 0),
+    ["folder"]        = Vector2.new(768, 0),
+    ["home"]          = Vector2.new(816, 0),
+    ["zap"]           = Vector2.new(864, 0),
+    ["activity"]      = Vector2.new(912, 0),
+}
+
+local function getIcon(name)
+    local pos = LucideIcons[name]
+    if not pos then return nil end
+    return {
+        Image = LUCIDE_SHEET,
+        ImageRectOffset = pos,
+        ImageRectSize = Vector2.new(48, 48),
+    }
+end
 
 -- ==========================================================================
 -- LIBRARY TABLE
 -- ==========================================================================
 local Library = {}
-Library.Version = "2.1.0"
+Library.Version = "3.0.0"
+Library.SaveManager = nil
 
 Library.Theme = {
     Background    = Color3.fromRGB(0, 0, 0),
@@ -116,11 +161,12 @@ function Library:Window(cfg)
     cfg = cfg or {}
 
     local win = {}
-    win.Tabs       = {}
-    win.Flags      = {}
-    win._conns     = {}
-    win._destroyed = false
-    win._activeTab = nil
+    win.Tabs        = {}
+    win.Flags       = {}
+    win.Elements    = {}
+    win._conns      = {}
+    win._destroyed  = false
+    win._activeTab  = nil
 
     local accent    = cfg.Accent or Theme.Accent
     local title     = cfg.Title or "Meme"
@@ -161,7 +207,7 @@ function Library:Window(cfg)
     }, main)
 
     local titleRow = new("Frame", {
-        Size = UDim2.new(1, -30, 1, 0),
+        Size = UDim2.new(1, -130, 1, 0),
         Position = UDim2.new(0, 15, 0, 0),
         BackgroundTransparency = 1,
     }, header)
@@ -195,6 +241,68 @@ function Library:Window(cfg)
         Font = Theme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
     }, titleRow)
+
+    -- === Header buttons (config / settings) ===
+    local headerBtns = new("Frame", {
+        Size = UDim2.new(0, 100, 1, 0),
+        Position = UDim2.new(1, -110, 0, 0),
+        BackgroundTransparency = 1,
+    }, header)
+    new("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, headerBtns)
+
+    -- Save button
+    local saveBtn = new("TextButton", {
+        Size = UDim2.new(0, 30, 0, 30),
+        BackgroundColor3 = Theme.Element,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false,
+        LayoutOrder = 1,
+    }, headerBtns)
+    corner(saveBtn, 6)
+    local saveIcon = getIcon("save")
+    if saveIcon then
+        new("ImageLabel", {
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(0.5, -8, 0.5, -8),
+            BackgroundTransparency = 1,
+            Image = saveIcon.Image,
+            ImageRectOffset = saveIcon.ImageRectOffset,
+            ImageRectSize = saveIcon.ImageRectSize,
+            ImageColor3 = Theme.TextDim,
+            Parent = saveBtn,
+        })
+    end
+
+    -- Settings button (color picker for accent)
+    local settingsBtn = new("TextButton", {
+        Size = UDim2.new(0, 30, 0, 30),
+        BackgroundColor3 = Theme.Element,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false,
+        LayoutOrder = 2,
+    }, headerBtns)
+    corner(settingsBtn, 6)
+    local settingsIcon = getIcon("palette")
+    if settingsIcon then
+        new("ImageLabel", {
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(0.5, -8, 0.5, -8),
+            BackgroundTransparency = 1,
+            Image = settingsIcon.Image,
+            ImageRectOffset = settingsIcon.ImageRectOffset,
+            ImageRectSize = settingsIcon.ImageRectSize,
+            ImageColor3 = Theme.TextDim,
+            Parent = settingsBtn,
+        })
+    end
 
     -- === RGB divider ===
     local divider = new("Frame", {
@@ -294,10 +402,18 @@ function Library:Window(cfg)
         end
     end))
 
+    -- === Accent color updater ===
+    local accentUpdaters = {}
+    function win:SetAccent(color)
+        Theme.Accent = color
+        accent = color
+        for _, fn in ipairs(accentUpdaters) do fn(color) end
+    end
+
     -- ======================================================================
     -- TAB
     -- ======================================================================
-    function win:Tab(name)
+    function win:Tab(name, iconName)
         local tab = {}
         tab.Name      = name
         tab.Window    = win
@@ -315,9 +431,28 @@ function Library:Window(cfg)
         }, sidebar)
         corner(btn, 6)
 
+        -- Icon
+        local iconOffset = 14
+        if iconName then
+            local ico = getIcon(iconName)
+            if ico then
+                new("ImageLabel", {
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(0, 12, 0.5, -8),
+                    BackgroundTransparency = 1,
+                    Image = ico.Image,
+                    ImageRectOffset = ico.ImageRectOffset,
+                    ImageRectSize = ico.ImageRectSize,
+                    ImageColor3 = Theme.TextDim,
+                    Parent = btn,
+                })
+                iconOffset = 34
+            end
+        end
+
         local btnLabel = new("TextLabel", {
-            Size = UDim2.new(1, -16, 1, 0),
-            Position = UDim2.new(0, 14, 0, 0),
+            Size = UDim2.new(1, -iconOffset - 10, 1, 0),
+            Position = UDim2.new(0, iconOffset, 0, 0),
             BackgroundTransparency = 1,
             Text = name,
             TextColor3 = Theme.TextDim,
@@ -335,6 +470,7 @@ function Library:Window(cfg)
             Visible = false,
         }, btn)
         corner(indicator, 2)
+        table.insert(accentUpdaters, function(c) indicator.BackgroundColor3 = c end)
 
         -- Page
         local page = new("ScrollingFrame", {
@@ -371,11 +507,13 @@ function Library:Window(cfg)
                 t._indicator.Visible   = false
                 t._btnLabel.TextColor3 = Theme.TextDim
                 tween(t._btn, { BackgroundTransparency = 1 }, 0.12)
+                if t._icon then t._icon.ImageColor3 = Theme.TextDim end
             end
             page.Visible         = true
             indicator.Visible    = true
             btnLabel.TextColor3  = Theme.Text
             win._activeTab       = tab
+            if tab._icon then tab._icon.ImageColor3 = accent end
         end
 
         -- Hover
@@ -414,14 +552,53 @@ function Library:Window(cfg)
         end
 
         -- ------------------------------------------------------------------
-        -- TOGGLE
+        -- TOGGLE (with integrated keybind button)
         -- ------------------------------------------------------------------
-        function tab:Toggle(label, default, callback)
+        function tab:Toggle(label, default, callback, bindKey)
             local state = default and true or false
+            local currentBind = bindKey
+            local listening = false
+
             local row = makeRow(34)
 
+            -- Keybind button (keyboard icon) — only if bindKey provided
+            local keyBtn
+            if bindKey then
+                keyBtn = new("TextButton", {
+                    Size = UDim2.new(0, 24, 0, 24),
+                    Position = UDim2.new(1, -84, 0.5, -12),
+                    BackgroundColor3 = Theme.ElementActive,
+                    BorderSizePixel = 0,
+                    Text = "",
+                    AutoButtonColor = false,
+                    Parent = row,
+                })
+                corner(keyBtn, 4)
+
+                local kbIcon = getIcon("keyboard")
+                local kbImg
+                if kbIcon then
+                    kbImg = new("ImageLabel", {
+                        Size = UDim2.new(0, 12, 0, 12),
+                        Position = UDim2.new(0.5, -6, 0.5, -6),
+                        BackgroundTransparency = 1,
+                        Image = kbIcon.Image,
+                        ImageRectOffset = kbIcon.ImageRectOffset,
+                        ImageRectSize = kbIcon.ImageRectSize,
+                        ImageColor3 = Theme.TextDim,
+                        Parent = keyBtn,
+                    })
+                end
+
+                table.insert(win._conns, keyBtn.MouseButton1Click:Connect(function()
+                    listening = true
+                    if kbImg then kbImg.ImageColor3 = accent end
+                end))
+            end
+
+            -- Label
             new("TextLabel", {
-                Size = UDim2.new(1, -70, 1, 0),
+                Size = UDim2.new(1, bindKey and -110 or -70, 1, 0),
                 Position = UDim2.new(0, 12, 0, 0),
                 BackgroundTransparency = 1,
                 Text = label,
@@ -432,6 +609,7 @@ function Library:Window(cfg)
                 Parent = row,
             })
 
+            -- Toggle track
             local track = new("Frame", {
                 Size = UDim2.new(0, 42, 0, 20),
                 Position = UDim2.new(1, -54, 0.5, -10),
@@ -440,6 +618,9 @@ function Library:Window(cfg)
                 Parent = row,
             })
             corner(track, 10)
+            table.insert(accentUpdaters, function(c)
+                if state then track.BackgroundColor3 = c end
+            end)
 
             local knob = new("Frame", {
                 Size = UDim2.new(0, 16, 0, 16),
@@ -467,16 +648,42 @@ function Library:Window(cfg)
             end
 
             table.insert(win._conns, row.InputBegan:Connect(function(input)
-                if isMouse(input) then set(not state) end
+                if isMouse(input) then
+                    if keyBtn and input.Position.X >= keyBtn.AbsolutePosition.X then return end
+                    set(not state)
+                end
             end))
+
+            -- Keybind listener
+            if bindKey then
+                table.insert(win._conns, UserInputService.InputBegan:Connect(function(input, gp)
+                    if gp then return end
+                    if listening then
+                        listening = false
+                        if input.KeyCode == Enum.KeyCode.Backspace then
+                            currentBind = nil
+                        else
+                            currentBind = input.KeyCode
+                        end
+                        if kbImg then kbImg.ImageColor3 = Theme.TextDim end
+                        win.Flags[label .. "_key"] = currentBind
+                        return
+                    end
+                    if currentBind and input.KeyCode == currentBind then
+                        set(not state)
+                    end
+                end))
+            end
 
             set(state, false)
 
             local obj = {}
             function obj:Set(v) set(v, true) end
             function obj:Get() return state end
+            function obj:SetKey(k) currentBind = k end
             function obj:SetCallback(fn) callback = fn end
             function obj:Destroy() row:Destroy() end
+            table.insert(win.Elements, { Type = "Toggle", Label = label, Object = obj })
             return obj
         end
 
@@ -566,6 +773,7 @@ function Library:Window(cfg)
                 Parent = trackBg,
             })
             corner(fill, 3)
+            table.insert(accentUpdaters, function(c) fill.BackgroundColor3 = c end)
 
             local dragging = false
             local function updateFromX(x)
@@ -610,6 +818,7 @@ function Library:Window(cfg)
             function obj:Get() return value end
             function obj:SetCallback(fn) callback = fn end
             function obj:Destroy() row:Destroy() end
+            table.insert(win.Elements, { Type = "Slider", Label = label, Object = obj })
             return obj
         end
 
@@ -665,6 +874,7 @@ function Library:Window(cfg)
             function obj:Get() return box.Text end
             function obj:SetCallback(fn) callback = fn end
             function obj:Destroy() row:Destroy() end
+            table.insert(win.Elements, { Type = "Textbox", Label = label, Object = obj })
             return obj
         end
 
@@ -789,11 +999,268 @@ function Library:Window(cfg)
             function obj:Get() return selected end
             function obj:SetCallback(fn) callback = fn end
             function obj:Destroy() row:Destroy() end
+            table.insert(win.Elements, { Type = "Dropdown", Label = label, Object = obj })
             return obj
         end
 
         -- ------------------------------------------------------------------
-        -- KEYBIND
+        -- COLOR PICKER
+        -- ------------------------------------------------------------------
+        function tab:ColorPicker(label, default, callback)
+            local color = default or Color3.fromRGB(255, 0, 0)
+            local open = false
+
+            local row = new("Frame", {
+                Size = UDim2.new(1, 0, 0, 34),
+                BackgroundColor3 = Theme.Element,
+                BorderSizePixel = 0,
+                ClipsDescendants = true,
+            }, page)
+            corner(row, 6)
+            stroke(row, Theme.Outline, 1, 0.4)
+
+            local headerBtn = new("TextButton", {
+                Size = UDim2.new(1, 0, 0, 34),
+                BackgroundTransparency = 1,
+                Text = "",
+                AutoButtonColor = false,
+                Parent = row,
+            })
+
+            new("TextLabel", {
+                Size = UDim2.new(0.5, -12, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                BackgroundTransparency = 1,
+                Text = label,
+                TextColor3 = Theme.Text,
+                TextSize = 14,
+                Font = Theme.FontBold,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = headerBtn,
+            })
+
+            local swatch = new("Frame", {
+                Size = UDim2.new(0, 20, 0, 20),
+                Position = UDim2.new(1, -32, 0.5, -10),
+                BackgroundColor3 = color,
+                BorderSizePixel = 0,
+                Parent = headerBtn,
+            })
+            corner(swatch, 4)
+            stroke(swatch, Theme.Outline, 1, 0.5)
+
+            -- Picker panel
+            local panel = new("Frame", {
+                Size = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 0, 34),
+                BackgroundTransparency = 1,
+                ClipsDescendants = true,
+                Parent = row,
+            })
+
+            -- Hue slider
+            local hueBg = new("Frame", {
+                Size = UDim2.new(1, -20, 0, 12),
+                Position = UDim2.new(0, 10, 0, 10),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderSizePixel = 0,
+                Parent = panel,
+            })
+            corner(hueBg, 6)
+
+            local hueGradient = new("UIGradient", {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                    ColorSequenceKeypoint.new(1/6, Color3.fromRGB(255, 255, 0)),
+                    ColorSequenceKeypoint.new(2/6, Color3.fromRGB(0, 255, 0)),
+                    ColorSequenceKeypoint.new(3/6, Color3.fromRGB(0, 255, 255)),
+                    ColorSequenceKeypoint.new(4/6, Color3.fromRGB(0, 0, 255)),
+                    ColorSequenceKeypoint.new(5/6, Color3.fromRGB(255, 0, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+                }),
+            }, hueBg)
+
+            local hueKnob = new("Frame", {
+                Size = UDim2.new(0, 14, 0, 14),
+                Position = UDim2.new(0, -7, 0.5, -7),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderSizePixel = 0,
+                Parent = hueBg,
+            })
+            corner(hueKnob, 7)
+            stroke(hueKnob, Color3.fromRGB(0, 0, 0), 2, 0.3)
+
+            -- Sat/Val square
+            local svBg = new("Frame", {
+                Size = UDim2.new(1, -20, 0, 80),
+                Position = UDim2.new(0, 10, 0, 30),
+                BackgroundColor3 = color,
+                BorderSizePixel = 0,
+                Parent = panel,
+            })
+            corner(svBg, 4)
+
+            local svGradientX = new("UIGradient", {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255, 0)),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 1),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+            }, svBg)
+
+            local svGradientY = new("UIGradient", {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0)),
+                }),
+                Rotation = 90,
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+            }, svBg)
+
+            local svKnob = new("Frame", {
+                Size = UDim2.new(0, 10, 0, 10),
+                Position = UDim2.new(1, -5, 0, -5),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderSizePixel = 0,
+                Parent = svBg,
+            })
+            corner(svKnob, 5)
+            stroke(svKnob, Color3.fromRGB(0, 0, 0), 1, 0.3)
+
+            -- Hex input
+            local hexBox = new("TextBox", {
+                Size = UDim2.new(1, -20, 0, 22),
+                Position = UDim2.new(0, 10, 0, 120),
+                BackgroundColor3 = Theme.ElementActive,
+                BorderSizePixel = 0,
+                Text = color:ToHex(),
+                TextColor3 = Theme.Text,
+                TextSize = 12,
+                Font = Theme.Font,
+                ClearTextOnFocus = false,
+                Parent = panel,
+            })
+            corner(hexBox, 4)
+            pad(hexBox, 6)
+
+            local function updateColor(c, skipHex)
+                color = c
+                swatch.BackgroundColor3 = c
+                svBg.BackgroundColor3 = Color3.fromHSV(
+                    Color3.toHSV(c)
+                )
+                if not skipHex then hexBox.Text = c:ToHex() end
+                win.Flags[label] = c
+                call(callback, c)
+            end
+
+            -- Hue drag
+            local hueDrag = false
+            table.insert(win._conns, hueBg.InputBegan:Connect(function(input)
+                if isMouse(input) then
+                    hueDrag = true
+                    local pos = math.clamp(
+                        (input.Position.X - hueBg.AbsolutePosition.X) / hueBg.AbsoluteSize.X, 0, 1
+                    )
+                    hueKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                    local h, s, v = Color3.toHSV(color)
+                    local nc = Color3.fromHSV(pos, s, v)
+                    updateColor(nc)
+                end
+            end))
+            table.insert(win._conns, UserInputService.InputChanged:Connect(function(input)
+                if hueDrag and (input.UserInputType == Enum.UserInputType.MouseMovement
+                    or input.UserInputType == Enum.UserInputType.Touch) then
+                    local pos = math.clamp(
+                        (input.Position.X - hueBg.AbsolutePosition.X) / hueBg.AbsoluteSize.X, 0, 1
+                    )
+                    hueKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                    local h, s, v = Color3.toHSV(color)
+                    local nc = Color3.fromHSV(pos, s, v)
+                    updateColor(nc)
+                end
+            end))
+            table.insert(win._conns, UserInputService.InputEnded:Connect(function(input)
+                if isMouse(input) then hueDrag = false end
+            end))
+
+            -- SV drag
+            local svDrag = false
+            table.insert(win._conns, svBg.InputBegan:Connect(function(input)
+                if isMouse(input) then
+                    svDrag = true
+                    local rx = math.clamp(
+                        (input.Position.X - svBg.AbsolutePosition.X) / svBg.AbsoluteSize.X, 0, 1
+                    )
+                    local ry = math.clamp(
+                        (input.Position.Y - svBg.AbsolutePosition.Y) / svBg.AbsoluteSize.Y, 0, 1
+                    )
+                    svKnob.Position = UDim2.new(rx, -5, ry, -5)
+                    local h = select(1, Color3.toHSV(color))
+                    local nc = Color3.fromHSV(h, rx, 1 - ry)
+                    updateColor(nc)
+                end
+            end))
+            table.insert(win._conns, UserInputService.InputChanged:Connect(function(input)
+                if svDrag and (input.UserInputType == Enum.UserInputType.MouseMovement
+                    or input.UserInputType == Enum.UserInputType.Touch) then
+                    local rx = math.clamp(
+                        (input.Position.X - svBg.AbsolutePosition.X) / svBg.AbsoluteSize.X, 0, 1
+                    )
+                    local ry = math.clamp(
+                        (input.Position.Y - svBg.AbsolutePosition.Y) / svBg.AbsoluteSize.Y, 0, 1
+                    )
+                    svKnob.Position = UDim2.new(rx, -5, ry, -5)
+                    local h = select(1, Color3.toHSV(color))
+                    local nc = Color3.fromHSV(h, rx, 1 - ry)
+                    updateColor(nc)
+                end
+            end))
+            table.insert(win._conns, UserInputService.InputEnded:Connect(function(input)
+                if isMouse(input) then svDrag = false end
+            end))
+
+            -- Hex input
+            table.insert(win._conns, hexBox.FocusLost:Connect(function()
+                local ok, c = pcall(Color3.fromHex, hexBox.Text)
+                if ok then
+                    updateColor(c, true)
+                else
+                    hexBox.Text = color:ToHex()
+                end
+            end))
+
+            -- Toggle panel
+            table.insert(win._conns, headerBtn.MouseButton1Click:Connect(function()
+                open = not open
+                if open then
+                    panel.Size = UDim2.new(1, 0, 0, 152)
+                    row.Size   = UDim2.new(1, 0, 0, 34 + 152)
+                else
+                    panel.Size = UDim2.new(1, 0, 0, 0)
+                    row.Size   = UDim2.new(1, 0, 0, 34)
+                end
+            end))
+
+            win.Flags[label] = color
+
+            local obj = {}
+            function obj:Set(c) updateColor(c) end
+            function obj:Get() return color end
+            function obj:SetCallback(fn) callback = fn end
+            function obj:Destroy() row:Destroy() end
+            table.insert(win.Elements, { Type = "ColorPicker", Label = label, Object = obj })
+            return obj
+        end
+
+        -- ------------------------------------------------------------------
+        -- KEYBIND (standalone)
         -- ------------------------------------------------------------------
         function tab:Keybind(label, default, callback)
             local current   = default or Enum.KeyCode.Unknown
@@ -861,6 +1328,7 @@ function Library:Window(cfg)
             function obj:Get() return current end
             function obj:SetCallback(fn) callback = fn end
             function obj:Destroy() row:Destroy() end
+            table.insert(win.Elements, { Type = "Keybind", Label = label, Object = obj })
             return obj
         end
 
@@ -914,6 +1382,9 @@ function Library:Window(cfg)
             })
             local obj = {}
             function obj:Destroy() f:Destroy() end
+            table.insert(accentUpdaters, function(c)
+                f:FindFirstChildOfClass("TextLabel").TextColor3 = c
+            end)
             return obj
         end
 
@@ -938,6 +1409,38 @@ function Library:Window(cfg)
     function win:Toggle() gui.Enabled = not gui.Enabled end
     function win:SetToggleKey(key) toggleKey = key end
 
+    -- === Save config ===
+    function win:SaveConfig(name)
+        local data = { flags = win.Flags, version = Library.Version }
+        local ok, encoded = pcall(HttpService.JSONEncode, HttpService, data)
+        if not ok then return false, "encode failed" end
+        if writefile then
+            writefile("unsky_" .. (name or "default") .. ".json", encoded)
+            return true
+        end
+        return false, "no filesystem"
+    end
+
+    -- === Load config ===
+    function win:LoadConfig(name)
+        if not isfile or not readfile then return false, "no filesystem" end
+        local path = "unsky_" .. (name or "default") .. ".json"
+        if not isfile(path) then return false, "file not found" end
+        local ok, raw = pcall(readfile, path)
+        if not ok then return false, "read failed" end
+        local ok2, data = pcall(HttpService.JSONDecode, HttpService, raw)
+        if not ok2 or type(data) ~= "table" then return false, "decode failed" end
+        for k, v in next, (data.flags or {}) do
+            win.Flags[k] = v
+            for _, el in ipairs(win.Elements) do
+                if el.Label == k and el.Object.Set then
+                    pcall(function() el.Object:Set(v) end)
+                end
+            end
+        end
+        return true
+    end
+
     function win:Destroy()
         win._destroyed = true
         for _, c in ipairs(win._conns) do
@@ -946,6 +1449,111 @@ function Library:Window(cfg)
         win._conns = {}
         gui:Destroy()
     end
+
+    -- === Wire up save button ===
+    table.insert(win._conns, saveBtn.MouseButton1Click:Connect(function()
+        local ok, err = win:SaveConfig("default")
+        if ok then
+            Library:Notify("config saved.", 2)
+        else
+            Library:Notify("save failed: " .. tostring(err), 3)
+        end
+    end))
+
+    -- === Wire up settings button (accent color picker) ===
+    table.insert(win._conns, settingsBtn.MouseButton1Click:Connect(function()
+        -- quick accent picker in a notification-style popup
+        local popup = new("Frame", {
+            Size = UDim2.new(0, 200, 0, 100),
+            Position = UDim2.new(0.5, -100, 0.5, -50),
+            BackgroundColor3 = Theme.Surface,
+            BorderSizePixel = 0,
+            Parent = gui,
+        })
+        corner(popup, 8)
+        stroke(popup, Theme.Outline, 1, 0.2)
+
+        new("TextLabel", {
+            Size = UDim2.new(1, -20, 0, 24),
+            Position = UDim2.new(0, 10, 0, 8),
+            BackgroundTransparency = 1,
+            Text = "accent color",
+            TextColor3 = Theme.Text,
+            TextSize = 14,
+            Font = Theme.FontBold,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = popup,
+        })
+
+        local close = new("TextButton", {
+            Size = UDim2.new(0, 20, 0, 20),
+            Position = UDim2.new(1, -28, 0, 8),
+            BackgroundTransparency = 1,
+            Text = "x",
+            TextColor3 = Theme.TextDim,
+            TextSize = 14,
+            Font = Theme.FontBold,
+            Parent = popup,
+        })
+        table.insert(win._conns, close.MouseButton1Click:Connect(function()
+            popup:Destroy()
+        end))
+
+        local hue = new("Frame", {
+            Size = UDim2.new(1, -20, 0, 12),
+            Position = UDim2.new(0, 10, 0, 40),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BorderSizePixel = 0,
+            Parent = popup,
+        })
+        corner(hue, 6)
+
+        new("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                ColorSequenceKeypoint.new(1/6, Color3.fromRGB(255, 255, 0)),
+                ColorSequenceKeypoint.new(2/6, Color3.fromRGB(0, 255, 0)),
+                ColorSequenceKeypoint.new(3/6, Color3.fromRGB(0, 255, 255)),
+                ColorSequenceKeypoint.new(4/6, Color3.fromRGB(0, 0, 255)),
+                ColorSequenceKeypoint.new(5/6, Color3.fromRGB(255, 0, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+            }),
+        }, hue)
+
+        local hueKnob = new("Frame", {
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(0, -8, 0.5, -8),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BorderSizePixel = 0,
+            Parent = hue,
+        })
+        corner(hueKnob, 8)
+        stroke(hueKnob, Color3.fromRGB(0, 0, 0), 2, 0.3)
+
+        local hueDrag = false
+        local function updateHue(x)
+            local p = math.clamp((x - hue.AbsolutePosition.X) / hue.AbsoluteSize.X, 0, 1)
+            hueKnob.Position = UDim2.new(p, -8, 0.5, -8)
+            local c = Color3.fromHSV(p, 1, 1)
+            win:SetAccent(c)
+        end
+
+        table.insert(win._conns, hue.InputBegan:Connect(function(input)
+            if isMouse(input) then
+                hueDrag = true
+                updateHue(input.Position.X)
+            end
+        end))
+        table.insert(win._conns, UserInputService.InputChanged:Connect(function(input)
+            if hueDrag and (input.UserInputType == Enum.UserInputType.MouseMovement
+                or input.UserInputType == Enum.UserInputType.Touch) then
+                updateHue(input.Position.X)
+            end
+        end))
+        table.insert(win._conns, UserInputService.InputEnded:Connect(function(input)
+            if isMouse(input) then hueDrag = false end
+        end))
+    end))
 
     return win
 end
