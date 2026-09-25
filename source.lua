@@ -362,17 +362,17 @@ function Library:Window(cfg)
         }, page)
 
         tab.Frame     = page
-        tab.Button    = btn
+        tab.Btn       = btn          -- was tab.Button
         tab.Indicator = indicator
-        tab.BtnLabel  = btnLabel   -- renamed from tab.Label
+        tab.BtnLabel  = btnLabel
 
         -- Select
         function tab:Select()
             for _, t in ipairs(win.Tabs) do
-                t.Frame.Visible     = false
-                t.Indicator.Visible = false
+                t.Frame.Visible       = false
+                t.Indicator.Visible   = false
                 t.BtnLabel.TextColor3 = Theme.TextDim
-                tween(t.Button, { BackgroundTransparency = 1 }, 0.12)
+                tween(t.Btn, { BackgroundTransparency = 1 }, 0.12)
             end
             page.Visible        = true
             indicator.Visible   = true
