@@ -1,14 +1,14 @@
 --[[
-    UnSky GUI Library  •  v2.0
+    UnSky GUI Library  •  v2.1
     Memesense-styled Roblox UI library.
 
     Load:
-        local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jhonny1sq/Memesense_robloxui/refs/heads/main/source.lua"))()
+        local Library = loadstring(game:HttpGet("URL_TO_THIS_FILE"))()
 
     Use:
         local Win = Library:Window({
-            Title    = "Meme",
-            Subtitle = "Sense",
+            Title     = "Meme",
+            Subtitle  = "Sense",
             ToggleKey = Enum.KeyCode.Delete,
         })
 
@@ -37,7 +37,7 @@ local LocalPlayer      = Players.LocalPlayer
 -- LIBRARY TABLE
 -- ==========================================================================
 local Library = {}
-Library.Version = "2.0.0"
+Library.Version = "2.1.0"
 
 Library.Theme = {
     Background    = Color3.fromRGB(0, 0, 0),
@@ -90,6 +90,7 @@ local function pad(p, all)
 end
 
 local function tween(o, props, t, style)
+    if typeof(o) ~= "Instance" then return end
     TweenService:Create(o, TweenInfo.new(
         t or 0.18,
         style or Enum.EasingStyle.Quad,
@@ -115,11 +116,11 @@ function Library:Window(cfg)
     cfg = cfg or {}
 
     local win = {}
-    win.Tabs         = {}
-    win.Flags        = {}
-    win._conns       = {}
-    win._destroyed   = false
-    win._activeTab   = nil
+    win.Tabs       = {}
+    win.Flags      = {}
+    win._conns     = {}
+    win._destroyed = false
+    win._activeTab = nil
 
     local accent    = cfg.Accent or Theme.Accent
     local title     = cfg.Title or "Meme"
@@ -252,7 +253,7 @@ function Library:Window(cfg)
         Position = UDim2.new(0, 156, 0, 4),
         BackgroundTransparency = 1,
     }, content)
-    win.Pages = pages
+    win.Pages   = pages
     win.Sidebar = sidebar
 
     -- === Drag ===
@@ -294,9 +295,6 @@ function Library:Window(cfg)
     end))
 
     -- ======================================================================
-    -- TAB
-    -- ======================================================================
-        -- ======================================================================
     -- TAB
     -- ======================================================================
     function win:Tab(name)
@@ -361,23 +359,23 @@ function Library:Window(cfg)
             PaddingRight  = UDim.new(0, 8),
         }, page)
 
-        tab.Frame     = page
-        tab.Btn       = btn          -- was tab.Button
-        tab.Indicator = indicator
-        tab.BtnLabel  = btnLabel
+        tab._frame     = page
+        tab._btn       = btn
+        tab._indicator = indicator
+        tab._btnLabel  = btnLabel
 
         -- Select
         function tab:Select()
             for _, t in ipairs(win.Tabs) do
-                t.Frame.Visible       = false
-                t.Indicator.Visible   = false
-                t.BtnLabel.TextColor3 = Theme.TextDim
-                tween(t.Btn, { BackgroundTransparency = 1 }, 0.12)
+                t._frame.Visible       = false
+                t._indicator.Visible   = false
+                t._btnLabel.TextColor3 = Theme.TextDim
+                tween(t._btn, { BackgroundTransparency = 1 }, 0.12)
             end
-            page.Visible        = true
-            indicator.Visible   = true
-            btnLabel.TextColor3 = Theme.Text
-            win._activeTab      = tab
+            page.Visible         = true
+            indicator.Visible    = true
+            btnLabel.TextColor3  = Theme.Text
+            win._activeTab       = tab
         end
 
         -- Hover
@@ -687,7 +685,7 @@ function Library:Window(cfg)
             corner(row, 6)
             stroke(row, Theme.Outline, 1, 0.4)
 
-            local header = new("TextButton", {
+            local headerBtn = new("TextButton", {
                 Size = UDim2.new(1, 0, 0, 34),
                 BackgroundTransparency = 1,
                 Text = "",
@@ -704,7 +702,7 @@ function Library:Window(cfg)
                 TextSize = 14,
                 Font = Theme.FontBold,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                Parent = header,
+                Parent = headerBtn,
             })
 
             local selectedLbl = new("TextLabel", {
@@ -716,7 +714,7 @@ function Library:Window(cfg)
                 TextSize = 13,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Right,
-                Parent = header,
+                Parent = headerBtn,
             })
 
             local list = new("Frame", {
@@ -767,7 +765,7 @@ function Library:Window(cfg)
                 end))
             end
 
-            table.insert(win._conns, header.MouseButton1Click:Connect(function()
+            table.insert(win._conns, headerBtn.MouseButton1Click:Connect(function()
                 open = not open
                 if open then
                     local h = #options * 28
