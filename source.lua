@@ -12,17 +12,23 @@ local function getContainer()
 end
 
 local Theme = {
-    Background    = Color3.fromRGB(0, 0, 0),
-    Accent        = Color3.fromRGB(255, 0, 5),
+    Background    = Color3.fromRGB(14, 14, 14),
+    Panel         = Color3.fromRGB(22, 22, 22),
+    Element       = Color3.fromRGB(26, 26, 26),
+    ElementHover  = Color3.fromRGB(36, 36, 36),
+    ElementActive = Color3.fromRGB(44, 44, 44),
+    Accent        = Color3.fromRGB(220, 40, 40),
+    AccentRed     = Color3.fromRGB(255, 45, 45),
     AccentOn      = Color3.fromRGB(255, 50, 50),
-    Text          = Color3.fromRGB(255, 255, 255),
-    TextDim       = Color3.fromRGB(140, 140, 140),
-    TextMid       = Color3.fromRGB(190, 190, 190),
-    Element       = Color3.fromRGB(18, 18, 18),
-    ElementHover  = Color3.fromRGB(28, 28, 28),
-    ElementActive = Color3.fromRGB(36, 36, 36),
-    Font          = Enum.Font.SourceSans,
-    FontBold      = Enum.Font.SourceSansBold,
+    Text          = Color3.fromRGB(232, 232, 232),
+    TextDim       = Color3.fromRGB(130, 130, 130),
+    TextMid       = Color3.fromRGB(180, 180, 180),
+    Outline       = Color3.fromRGB(38, 38, 38),
+    OutlineSoft   = Color3.fromRGB(26, 26, 26),
+    Font          = Enum.Font.Gotham,
+    FontBold      = Enum.Font.GothamBold,
+    Corner        = 6,
+    CornerSmall   = 4,
 }
 
 local CHECK_IMG = "rbxassetid://14189590169"
@@ -39,6 +45,10 @@ local function tween(i, props, t)
     TweenService:Create(i, TweenInfo.new(t or 0.15), props):Play()
 end
 
+local function corner(i, r)
+    return new("UICorner", { CornerRadius = UDim.new(0, r or Theme.Corner) }, i)
+end
+
 local function call(fn, ...)
     if type(fn) == "function" then task.spawn(fn, ...) end
 end
@@ -49,7 +59,7 @@ local function isMouse(inp)
 end
 
 local Library = {}
-Library.Version = "5.2.0"
+Library.Version = "6.0.0"
 Library.Theme   = Theme
 
 function Library:Window(cfg)
@@ -66,7 +76,7 @@ function Library:Window(cfg)
 
     local accent    = cfg.Accent or Theme.Accent
     local toggleKey = cfg.ToggleKey or Enum.KeyCode.Delete
-    local size      = cfg.Size or UDim2.new(0, 568, 0, 445)
+    local size      = cfg.Size or UDim2.new(0, 640, 0, 480)
     local pos       = cfg.Position or UDim2.new(
         0.5, -size.X.Offset / 2,
         0.5, -size.Y.Offset / 2
@@ -86,14 +96,21 @@ function Library:Window(cfg)
         BackgroundColor3 = Theme.Background,
         BorderSizePixel = 0,
     }, gui)
+    corner(main, 10)
+    new("UIStroke", {
+        Color = Theme.Outline,
+        Thickness = 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+    }, main)
     win.Frame = main
 
     local rgbLine = new("Frame", {
-        Size = UDim2.new(1, 0, 0, 1),
+        Size = UDim2.new(1, 0, 0, 2),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
     }, main)
+    corner(rgbLine, 6)
 
     local rgbGradient = new("UIGradient", {
         Color = ColorSequence.new({
@@ -113,30 +130,30 @@ function Library:Window(cfg)
 
     new("TextLabel", {
         Size = UDim2.new(0, 97, 0, 50),
-        Position = UDim2.new(0, 10, 0, 0),
+        Position = UDim2.new(0, 14, 0, 2),
         BackgroundTransparency = 1,
         Text = cfg.Title or "Meme",
-        TextColor3 = Theme.Accent,
-        TextSize = 25,
+        TextColor3 = Theme.AccentRed,
+        TextSize = 22,
         Font = Theme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
     }, main)
 
     new("TextLabel", {
         Size = UDim2.new(0, 97, 0, 50),
-        Position = UDim2.new(0, 64, 0, 0),
+        Position = UDim2.new(0, 68, 0, 2),
         BackgroundTransparency = 1,
         Text = cfg.Subtitle or "Sense",
         TextColor3 = Theme.Text,
-        TextSize = 25,
+        TextSize = 22,
         Font = Theme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
     }, main)
 
     local saveBtn = new("TextButton", {
-        Size = UDim2.new(0, 70, 0, 26),
-        Position = UDim2.new(1, -82, 0, 12),
-        BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+        Size = UDim2.new(0, 70, 0, 28),
+        Position = UDim2.new(1, -100, 0, 12),
+        BackgroundColor3 = Theme.Element,
         BorderSizePixel = 0,
         Text = "Save",
         TextColor3 = Theme.Text,
@@ -144,12 +161,12 @@ function Library:Window(cfg)
         Font = Theme.FontBold,
         AutoButtonColor = false,
     }, main)
-    new("UICorner", { CornerRadius = UDim.new(0, 4) }, saveBtn)
+    corner(saveBtn, 6)
 
     local themeBtn = new("TextButton", {
-        Size = UDim2.new(0, 26, 0, 26),
-        Position = UDim2.new(1, -46, 0, 12),
-        BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+        Size = UDim2.new(0, 28, 0, 28),
+        Position = UDim2.new(1, -60, 0, 12),
+        BackgroundColor3 = Theme.Element,
         BorderSizePixel = 0,
         Text = "...",
         TextColor3 = Theme.Text,
@@ -157,46 +174,71 @@ function Library:Window(cfg)
         Font = Theme.FontBold,
         AutoButtonColor = false,
     }, main)
-    new("UICorner", { CornerRadius = UDim.new(0, 4) }, themeBtn)
+    corner(themeBtn, 6)
 
-    table.insert(win._conns, saveBtn.MouseEnter:Connect(function()
-        tween(saveBtn, { BackgroundColor3 = Theme.ElementHover })
-    end))
-    table.insert(win._conns, saveBtn.MouseLeave:Connect(function()
-        tween(saveBtn, { BackgroundColor3 = Color3.fromRGB(25, 25, 25) })
-    end))
-    table.insert(win._conns, themeBtn.MouseEnter:Connect(function()
-        tween(themeBtn, { BackgroundColor3 = Theme.ElementHover })
-    end))
-    table.insert(win._conns, themeBtn.MouseLeave:Connect(function()
-        tween(themeBtn, { BackgroundColor3 = Color3.fromRGB(25, 25, 25) })
+    local closeBtn = new("TextButton", {
+        Size = UDim2.new(0, 28, 0, 28),
+        Position = UDim2.new(1, -28, 0, 12),
+        BackgroundColor3 = Theme.Element,
+        BorderSizePixel = 0,
+        Text = "X",
+        TextColor3 = Theme.TextDim,
+        TextSize = 12,
+        Font = Theme.FontBold,
+        AutoButtonColor = false,
+    }, main)
+    corner(closeBtn, 6)
+
+    for _, b in ipairs({saveBtn, themeBtn, closeBtn}) do
+        table.insert(win._conns, b.MouseEnter:Connect(function()
+            tween(b, { BackgroundColor3 = Theme.ElementHover })
+        end))
+        table.insert(win._conns, b.MouseLeave:Connect(function()
+            tween(b, { BackgroundColor3 = Theme.Element })
+        end))
+    end
+
+    table.insert(win._conns, closeBtn.MouseButton1Click:Connect(function()
+        gui.Enabled = false
     end))
 
     local sidebar = new("Frame", {
-        Size = UDim2.new(0, 151, 1, -60),
-        Position = UDim2.new(0, 5, 0, 55),
-        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 170, 1, -70),
+        Position = UDim2.new(0, 10, 0, 60),
+        BackgroundColor3 = Theme.Panel,
+        BorderSizePixel = 0,
     }, main)
-
-    new("UIListLayout", {
-        Padding = UDim.new(0, 4),
-        SortOrder = Enum.SortOrder.LayoutOrder,
+    corner(sidebar, 8)
+    new("UIStroke", {
+        Color = Theme.OutlineSoft,
+        Thickness = 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
     }, sidebar)
 
+    local sidebarInner = new("Frame", {
+        Size = UDim2.new(1, -10, 1, -10),
+        Position = UDim2.new(0, 5, 0, 5),
+        BackgroundTransparency = 1,
+    }, sidebar)
+    new("UIListLayout", {
+        Padding = UDim.new(0, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, sidebarInner)
+
     local pages = new("Frame", {
-        Size = UDim2.new(1, -171, 1, -60),
-        Position = UDim2.new(0, 161, 0, 55),
+        Size = UDim2.new(1, -190, 1, -70),
+        Position = UDim2.new(0, 190, 0, 60),
         BackgroundTransparency = 1,
     }, main)
     win.Pages   = pages
-    win.Sidebar = sidebar
+    win.Sidebar = sidebarInner
 
     local dragging, dragStart, startPos
     table.insert(win._conns, main.InputBegan:Connect(function(inp)
-        if isMouse(inp) and (inp.Position.Y - main.AbsolutePosition.Y) < 50 then
+        if isMouse(inp) and (inp.Position.Y - main.AbsolutePosition.Y) < 52 then
             dragging = true
             dragStart = inp.Position
-            startPos = main.Position
+            startPos  = main.Position
             inp.Changed:Connect(function()
                 if inp.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -223,7 +265,7 @@ function Library:Window(cfg)
         end
     end))
 
-    function win:Tab(name)
+    function win:Tab(name, icon)
         local tab = {}
         tab.Name     = name
         tab.Window   = win
@@ -231,27 +273,53 @@ function Library:Window(cfg)
 
         local btn = new("TextButton", {
             Size = UDim2.new(1, 0, 0, 34),
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 1,
+            BackgroundColor3 = Theme.Panel,
             BorderSizePixel = 0,
             Text = "",
             AutoButtonColor = false,
-        }, sidebar)
+        }, sidebarInner)
+        corner(btn, 6)
+
+        local indicator = new("Frame", {
+            Size = UDim2.new(0, 3, 0, 18),
+            Position = UDim2.new(0, 0, 0.5, -9),
+            BackgroundColor3 = accent,
+            BorderSizePixel = 0,
+            Visible = false,
+        }, btn)
+        corner(indicator, 2)
+
+        local iconOffset = 14
+        if icon then
+            new("TextLabel", {
+                Size = UDim2.new(0, 20, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
+                BackgroundTransparency = 1,
+                Text = icon,
+                TextColor3 = Theme.TextDim,
+                TextSize = 14,
+                Font = Theme.FontBold,
+                TextXAlignment = Enum.TextXAlignment.Center,
+                Parent = btn,
+            })
+            iconOffset = 36
+        end
 
         local btnLabel = new("TextLabel", {
-            Size = UDim2.new(1, -20, 1, 0),
-            Position = UDim2.new(0, 12, 0, 0),
+            Size = UDim2.new(1, icon and -46 or -22, 1, 0),
+            Position = UDim2.new(0, iconOffset, 0, 0),
             BackgroundTransparency = 1,
             Text = name,
-            TextColor3 = Theme.Text,
-            TextSize = 14,
-            Font = Theme.FontBold,
+            TextColor3 = Theme.TextDim,
+            TextSize = 13,
+            Font = Theme.Font,
             TextXAlignment = Enum.TextXAlignment.Left,
             Parent = btn,
         })
 
-        tab._btn      = btn
-        tab._btnLabel = btnLabel
+        tab._btn       = btn
+        tab._btnLabel  = btnLabel
+        tab._indicator = indicator
 
         local page = new("ScrollingFrame", {
             Size = UDim2.new(1, 0, 1, 0),
@@ -264,13 +332,13 @@ function Library:Window(cfg)
             Visible = false,
         }, pages)
         new("UIListLayout", {
-            Padding = UDim.new(0, 12),
+            Padding = UDim.new(0, 14),
             SortOrder = Enum.SortOrder.LayoutOrder,
         }, page)
         new("UIPadding", {
             PaddingTop    = UDim.new(0, 4),
             PaddingBottom = UDim.new(0, 10),
-            PaddingRight  = UDim.new(0, 10),
+            PaddingRight  = UDim.new(0, 12),
         }, page)
 
         tab._frame = page
@@ -278,13 +346,27 @@ function Library:Window(cfg)
         function tab:Select()
             for _, t in ipairs(win.Tabs) do
                 t._frame.Visible       = false
-                t._btnLabel.TextColor3 = Theme.Text
+                t._indicator.Visible   = false
+                t._btnLabel.TextColor3 = Theme.TextDim
+                tween(t._btn, { BackgroundColor3 = Theme.Panel })
             end
             page.Visible         = true
-            btnLabel.TextColor3  = Theme.Accent
+            indicator.Visible    = true
+            btnLabel.TextColor3  = Theme.Text
+            btn.BackgroundColor3 = Theme.Element
             win._activeTab       = tab
         end
 
+        table.insert(win._conns, btn.MouseEnter:Connect(function()
+            if win._activeTab ~= tab then
+                tween(btn, { BackgroundColor3 = Theme.Element })
+            end
+        end))
+        table.insert(win._conns, btn.MouseLeave:Connect(function()
+            if win._activeTab ~= tab then
+                tween(btn, { BackgroundColor3 = Theme.Panel })
+            end
+        end))
         table.insert(win._conns, btn.MouseButton1Click:Connect(function()
             tab:Select()
         end))
@@ -299,17 +381,17 @@ function Library:Window(cfg)
                 LayoutOrder = #page:GetChildren(),
             }, page)
             new("UIListLayout", {
-                Padding = UDim.new(0, 4),
+                Padding = UDim.new(0, 6),
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }, sect)
 
             new("TextLabel", {
-                Size = UDim2.new(1, 0, 0, 18),
+                Size = UDim2.new(1, 0, 0, 20),
                 BackgroundTransparency = 1,
                 Text = title or "",
                 TextColor3 = Theme.TextMid,
-                TextSize = 13,
-                Font = Theme.Font,
+                TextSize = 12,
+                Font = Theme.FontBold,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 LayoutOrder = 1,
                 Parent = sect,
@@ -325,13 +407,13 @@ function Library:Window(cfg)
 
             if columns > 1 then
                 new("UIGridLayout", {
-                    CellSize = UDim2.new(1 / columns, -4, 0, 26),
-                    CellPadding = UDim2.new(0, 8, 0, 2),
+                    CellSize = UDim2.new(1 / columns, -4, 0, 30),
+                    CellPadding = UDim2.new(0, 8, 0, 4),
                     SortOrder = Enum.SortOrder.LayoutOrder,
                 }, items)
             else
                 new("UIListLayout", {
-                    Padding = UDim.new(0, 3),
+                    Padding = UDim.new(0, 4),
                     SortOrder = Enum.SortOrder.LayoutOrder,
                 }, items)
             end
@@ -350,24 +432,33 @@ function Library:Window(cfg)
             local bind      = bindKey
             local listening = false
 
-            local cell = new("Frame", {
-                Size = UDim2.new(1, 0, 0, 26),
-                BackgroundTransparency = 1,
+            local row = new("Frame", {
+                Size = UDim2.new(1, 0, 0, 30),
+                BackgroundColor3 = Theme.Element,
+                BorderSizePixel = 0,
             }, getParent())
+            corner(row, 5)
+
+            table.insert(win._conns, row.MouseEnter:Connect(function()
+                tween(row, { BackgroundColor3 = Theme.ElementHover })
+            end))
+            table.insert(win._conns, row.MouseLeave:Connect(function()
+                tween(row, { BackgroundColor3 = Theme.Element })
+            end))
 
             local box = new("TextButton", {
-                Size = UDim2.new(0, 18, 0, 18),
-                Position = UDim2.new(0, 0, 0.5, -9),
-                BackgroundColor3 = state and Theme.AccentOn or Color3.fromRGB(255, 255, 255),
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = UDim2.new(0, 8, 0.5, -8),
+                BackgroundColor3 = state and Theme.AccentOn or Color3.fromRGB(240, 240, 240),
                 BorderSizePixel = 0,
                 Text = "",
                 AutoButtonColor = false,
-                Parent = cell,
+                Parent = row,
             })
-            new("UICorner", { CornerRadius = UDim.new(0, 5) }, box)
+            corner(box, 4)
 
             local img = new("ImageLabel", {
-                Size = UDim2.new(0, 14, 0, 14),
+                Size = UDim2.new(0, 12, 0, 12),
                 Position = UDim2.new(0, 2, 0, 2),
                 BackgroundTransparency = 1,
                 Image = CHECK_IMG,
@@ -376,44 +467,44 @@ function Library:Window(cfg)
                 Parent = box,
             })
 
-            local labelLbl = new("TextLabel", {
-                Size = UDim2.new(1, bindKey and -100 or -30, 1, 0),
-                Position = UDim2.new(0, 26, 0, 0),
+            new("TextLabel", {
+                Size = UDim2.new(1, bindKey and -94 or -32, 1, 0),
+                Position = UDim2.new(0, 30, 0, 0),
                 BackgroundTransparency = 1,
                 Text = label,
                 TextColor3 = Theme.Text,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                Parent = cell,
+                Parent = row,
             })
 
             local keyBtn
             if bindKey ~= nil then
                 keyBtn = new("TextButton", {
-                    Size = UDim2.new(0, 60, 0, 20),
-                    Position = UDim2.new(1, -62, 0.5, -10),
-                    BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+                    Size = UDim2.new(0, 58, 0, 20),
+                    Position = UDim2.new(1, -66, 0.5, -10),
+                    BackgroundColor3 = Theme.ElementActive,
                     BorderSizePixel = 0,
                     Text = bindKey.Name,
                     TextColor3 = Theme.TextDim,
                     TextSize = 11,
                     Font = Theme.Font,
                     AutoButtonColor = false,
-                    Parent = cell,
+                    Parent = row,
                 })
-                new("UICorner", { CornerRadius = UDim.new(0, 4) }, keyBtn)
+                corner(keyBtn, 4)
 
                 table.insert(win._conns, keyBtn.MouseButton1Click:Connect(function()
                     listening = true
                     keyBtn.Text = "..."
-                    keyBtn.TextColor3 = Theme.Accent
+                    keyBtn.TextColor3 = accent
                 end))
             end
 
             local function set(v, fire)
                 state = v and true or false
-                box.BackgroundColor3 = state and Theme.AccentOn or Color3.fromRGB(255, 255, 255)
+                box.BackgroundColor3 = state and Theme.AccentOn or Color3.fromRGB(240, 240, 240)
                 img.ImageTransparency = state and 0 or 1
                 win.Flags[label] = state
                 if fire ~= false then call(callback, state) end
@@ -447,7 +538,7 @@ function Library:Window(cfg)
             function obj:Get() return state end
             function obj:SetKey(k) bind = k end
             function obj:SetCallback(fn) callback = fn end
-            function obj:Destroy() cell:Destroy() end
+            function obj:Destroy() row:Destroy() end
 
             table.insert(win.Elements, { Type = "Toggle", Label = label, Object = obj })
             return obj
@@ -455,24 +546,24 @@ function Library:Window(cfg)
 
         function tab:Button(label, callback)
             local row = new("TextButton", {
-                Size = UDim2.new(1, 0, 0, 26),
-                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                Size = UDim2.new(1, 0, 0, 30),
+                BackgroundColor3 = Theme.Element,
                 BorderSizePixel = 0,
                 Text = label,
                 TextColor3 = Theme.Text,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 AutoButtonColor = false,
             }, getParent())
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, row)
-            new("UIPadding", { PaddingLeft = UDim.new(0, 10) }, row)
+            corner(row, 5)
+            new("UIPadding", { PaddingLeft = UDim.new(0, 12) }, row)
             row.TextXAlignment = Enum.TextXAlignment.Left
 
             table.insert(win._conns, row.MouseEnter:Connect(function()
                 tween(row, { BackgroundColor3 = Theme.ElementHover })
             end))
             table.insert(win._conns, row.MouseLeave:Connect(function()
-                tween(row, { BackgroundColor3 = Color3.fromRGB(25, 25, 25) })
+                tween(row, { BackgroundColor3 = Theme.Element })
             end))
             table.insert(win._conns, row.MouseButton1Click:Connect(function()
                 call(callback)
@@ -490,19 +581,19 @@ function Library:Window(cfg)
             local value = math.clamp(default, min, max)
 
             local row = new("Frame", {
-                Size = UDim2.new(1, 0, 0, 44),
-                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                Size = UDim2.new(1, 0, 0, 46),
+                BackgroundColor3 = Theme.Element,
                 BorderSizePixel = 0,
             }, getParent())
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, row)
+            corner(row, 5)
 
             new("TextLabel", {
                 Size = UDim2.new(1, -70, 0, 18),
-                Position = UDim2.new(0, 10, 0, 5),
+                Position = UDim2.new(0, 12, 0, 6),
                 BackgroundTransparency = 1,
                 Text = label,
                 TextColor3 = Theme.Text,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = row,
@@ -510,30 +601,32 @@ function Library:Window(cfg)
 
             local valueLbl = new("TextLabel", {
                 Size = UDim2.new(0, 50, 0, 18),
-                Position = UDim2.new(1, -60, 0, 5),
+                Position = UDim2.new(1, -62, 0, 6),
                 BackgroundTransparency = 1,
                 Text = tostring(value),
                 TextColor3 = Theme.TextDim,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Right,
                 Parent = row,
             })
 
             local trackBg = new("Frame", {
-                Size = UDim2.new(1, -20, 0, 3),
-                Position = UDim2.new(0, 10, 0, 32),
-                BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+                Size = UDim2.new(1, -24, 0, 4),
+                Position = UDim2.new(0, 12, 0, 32),
+                BackgroundColor3 = Theme.ElementActive,
                 BorderSizePixel = 0,
                 Parent = row,
             })
+            corner(trackBg, 2)
 
             local fill = new("Frame", {
                 Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
-                BackgroundColor3 = Theme.Accent,
+                BackgroundColor3 = accent,
                 BorderSizePixel = 0,
                 Parent = trackBg,
             })
+            corner(fill, 2)
 
             local dragging = false
             local function updateFromX(x)
@@ -584,28 +677,28 @@ function Library:Window(cfg)
         function tab:Textbox(label, default, callback)
             default = default or ""
             local row = new("Frame", {
-                Size = UDim2.new(1, 0, 0, 30),
-                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundColor3 = Theme.Element,
                 BorderSizePixel = 0,
             }, getParent())
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, row)
+            corner(row, 5)
 
             new("TextLabel", {
-                Size = UDim2.new(0.5, -10, 1, 0),
-                Position = UDim2.new(0, 10, 0, 0),
+                Size = UDim2.new(0.5, -12, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
                 BackgroundTransparency = 1,
                 Text = label,
                 TextColor3 = Theme.Text,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = row,
             })
 
             local box = new("TextBox", {
-                Size = UDim2.new(0.5, -20, 0, 22),
+                Size = UDim2.new(0.5, -24, 0, 22),
                 Position = UDim2.new(0.5, 0, 0.5, -11),
-                BackgroundColor3 = Color3.fromRGB(15, 15, 15),
+                BackgroundColor3 = Theme.ElementActive,
                 BorderSizePixel = 0,
                 Text = default,
                 TextColor3 = Theme.Text,
@@ -616,7 +709,7 @@ function Library:Window(cfg)
                 ClearTextOnFocus = false,
                 Parent = row,
             })
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, box)
+            corner(box, 4)
             new("UIPadding", { PaddingLeft = UDim.new(0, 8) }, box)
 
             table.insert(win._conns, box.FocusLost:Connect(function()
@@ -642,15 +735,15 @@ function Library:Window(cfg)
             local open = false
 
             local row = new("Frame", {
-                Size = UDim2.new(1, 0, 0, 30),
-                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundColor3 = Theme.Element,
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
             }, getParent())
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, row)
+            corner(row, 5)
 
             local headerBtn = new("TextButton", {
-                Size = UDim2.new(1, 0, 0, 30),
+                Size = UDim2.new(1, 0, 0, 32),
                 BackgroundTransparency = 1,
                 Text = "",
                 AutoButtonColor = false,
@@ -658,22 +751,22 @@ function Library:Window(cfg)
             })
 
             new("TextLabel", {
-                Size = UDim2.new(0.5, -10, 1, 0),
-                Position = UDim2.new(0, 10, 0, 0),
+                Size = UDim2.new(0.5, -12, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
                 BackgroundTransparency = 1,
                 Text = label,
                 TextColor3 = Theme.Text,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = headerBtn,
             })
 
             local selectedLbl = new("TextLabel", {
-                Size = UDim2.new(0.5, -20, 1, 0),
+                Size = UDim2.new(0.5, -24, 1, 0),
                 Position = UDim2.new(0.5, 0, 0, 0),
                 BackgroundTransparency = 1,
-                Text = tostring(selected),
+                Text = tostring(selected) .. " ▾",
                 TextColor3 = Theme.TextDim,
                 TextSize = 12,
                 Font = Theme.Font,
@@ -683,7 +776,7 @@ function Library:Window(cfg)
 
             local list = new("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
-                Position = UDim2.new(0, 0, 0, 30),
+                Position = UDim2.new(0, 0, 0, 32),
                 BackgroundTransparency = 1,
                 Parent = row,
             })
@@ -692,16 +785,17 @@ function Library:Window(cfg)
                 SortOrder = Enum.SortOrder.LayoutOrder,
             }, list)
             new("UIPadding", {
-                PaddingLeft   = UDim.new(0, 5),
-                PaddingRight  = UDim.new(0, 5),
-                PaddingBottom = UDim.new(0, 5),
+                PaddingLeft   = UDim.new(0, 6),
+                PaddingRight  = UDim.new(0, 6),
+                PaddingBottom = UDim.new(0, 6),
             }, list)
 
             for i, opt in ipairs(options) do
                 local ob = new("TextButton", {
-                    Size = UDim2.new(1, 0, 0, 24),
+                    Size = UDim2.new(1, 0, 0, 26),
                     LayoutOrder = i,
-                    BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+                    BackgroundColor3 = Theme.ElementActive,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     Text = tostring(opt),
                     TextColor3 = Theme.Text,
@@ -710,34 +804,34 @@ function Library:Window(cfg)
                     AutoButtonColor = false,
                     Parent = list,
                 })
-                new("UICorner", { CornerRadius = UDim.new(0, 4) }, ob)
+                corner(ob, 4)
 
                 table.insert(win._conns, ob.MouseButton1Click:Connect(function()
                     selected = opt
-                    selectedLbl.Text = tostring(opt)
+                    selectedLbl.Text = tostring(opt) .. " ▾"
                     win.Flags[label] = opt
                     call(callback, opt)
                     open = false
                     list.Size = UDim2.new(1, 0, 0, 0)
-                    row.Size  = UDim2.new(1, 0, 0, 30)
+                    row.Size  = UDim2.new(1, 0, 0, 32)
                 end))
                 table.insert(win._conns, ob.MouseEnter:Connect(function()
-                    tween(ob, { BackgroundColor3 = Color3.fromRGB(50, 50, 50) })
+                    tween(ob, { BackgroundTransparency = 0 })
                 end))
                 table.insert(win._conns, ob.MouseLeave:Connect(function()
-                    tween(ob, { BackgroundColor3 = Color3.fromRGB(35, 35, 35) })
+                    tween(ob, { BackgroundTransparency = 0.3 })
                 end))
             end
 
             table.insert(win._conns, headerBtn.MouseButton1Click:Connect(function()
                 open = not open
                 if open then
-                    local h = #options * 26 + 5
+                    local h = #options * 28 + 6
                     list.Size = UDim2.new(1, 0, 0, h)
-                    row.Size  = UDim2.new(1, 0, 0, 30 + h)
+                    row.Size  = UDim2.new(1, 0, 0, 32 + h)
                 else
                     list.Size = UDim2.new(1, 0, 0, 0)
-                    row.Size  = UDim2.new(1, 0, 0, 30)
+                    row.Size  = UDim2.new(1, 0, 0, 32)
                 end
             end))
 
@@ -746,7 +840,7 @@ function Library:Window(cfg)
             local obj = {}
             function obj:Set(v)
                 selected = v
-                selectedLbl.Text = tostring(v)
+                selectedLbl.Text = tostring(v) .. " ▾"
                 win.Flags[label] = v
                 call(callback, v)
             end
@@ -763,28 +857,28 @@ function Library:Window(cfg)
             local listening = false
 
             local row = new("Frame", {
-                Size = UDim2.new(1, 0, 0, 30),
-                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundColor3 = Theme.Element,
                 BorderSizePixel = 0,
             }, getParent())
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, row)
+            corner(row, 5)
 
             new("TextLabel", {
                 Size = UDim2.new(1, -110, 1, 0),
-                Position = UDim2.new(0, 10, 0, 0),
+                Position = UDim2.new(0, 12, 0, 0),
                 BackgroundTransparency = 1,
                 Text = label,
                 TextColor3 = Theme.Text,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = row,
             })
 
             local btn = new("TextButton", {
-                Size = UDim2.new(0, 80, 0, 22),
-                Position = UDim2.new(1, -88, 0.5, -11),
-                BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+                Size = UDim2.new(0, 82, 0, 22),
+                Position = UDim2.new(1, -94, 0.5, -11),
+                BackgroundColor3 = Theme.ElementActive,
                 BorderSizePixel = 0,
                 Text = current.Name,
                 TextColor3 = Theme.TextDim,
@@ -793,12 +887,12 @@ function Library:Window(cfg)
                 AutoButtonColor = false,
                 Parent = row,
             })
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, btn)
+            corner(btn, 4)
 
             table.insert(win._conns, btn.MouseButton1Click:Connect(function()
                 listening = true
                 btn.Text = "..."
-                btn.TextColor3 = Theme.Accent
+                btn.TextColor3 = accent
             end))
 
             table.insert(win._conns, UserInputService.InputBegan:Connect(function(inp, gp)
@@ -838,15 +932,15 @@ function Library:Window(cfg)
             local open = false
 
             local row = new("Frame", {
-                Size = UDim2.new(1, 0, 0, 30),
-                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundColor3 = Theme.Element,
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
             }, getParent())
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, row)
+            corner(row, 5)
 
             local headerBtn = new("TextButton", {
-                Size = UDim2.new(1, 0, 0, 30),
+                Size = UDim2.new(1, 0, 0, 32),
                 BackgroundTransparency = 1,
                 Text = "",
                 AutoButtonColor = false,
@@ -854,29 +948,29 @@ function Library:Window(cfg)
             })
 
             new("TextLabel", {
-                Size = UDim2.new(0.5, -10, 1, 0),
-                Position = UDim2.new(0, 10, 0, 0),
+                Size = UDim2.new(0.5, -12, 1, 0),
+                Position = UDim2.new(0, 12, 0, 0),
                 BackgroundTransparency = 1,
                 Text = label,
                 TextColor3 = Theme.Text,
-                TextSize = 13,
+                TextSize = 12,
                 Font = Theme.Font,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = headerBtn,
             })
 
             local swatch = new("Frame", {
-                Size = UDim2.new(0, 18, 0, 18),
-                Position = UDim2.new(1, -26, 0.5, -9),
+                Size = UDim2.new(0, 20, 0, 20),
+                Position = UDim2.new(1, -32, 0.5, -10),
                 BackgroundColor3 = color,
                 BorderSizePixel = 0,
                 Parent = headerBtn,
             })
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, swatch)
+            corner(swatch, 4)
 
             local panel = new("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
-                Position = UDim2.new(0, 0, 0, 30),
+                Position = UDim2.new(0, 0, 0, 32),
                 BackgroundTransparency = 1,
                 ClipsDescendants = true,
                 Parent = row,
@@ -889,7 +983,7 @@ function Library:Window(cfg)
                 BorderSizePixel = 0,
                 Parent = panel,
             })
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, hueBg)
+            corner(hueBg, 5)
             new("UIGradient", {
                 Color = ColorSequence.new({
                     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
@@ -903,13 +997,13 @@ function Library:Window(cfg)
             }, hueBg)
 
             local svBg = new("Frame", {
-                Size = UDim2.new(1, -20, 0, 70),
-                Position = UDim2.new(0, 10, 0, 26),
+                Size = UDim2.new(1, -20, 0, 80),
+                Position = UDim2.new(0, 10, 0, 28),
                 BackgroundColor3 = color,
                 BorderSizePixel = 0,
                 Parent = panel,
             })
-            new("UICorner", { CornerRadius = UDim.new(0, 4) }, svBg)
+            corner(svBg, 4)
 
             new("UIGradient", {
                 Transparency = NumberSequence.new({
@@ -979,11 +1073,11 @@ function Library:Window(cfg)
             table.insert(win._conns, headerBtn.MouseButton1Click:Connect(function()
                 open = not open
                 if open then
-                    panel.Size = UDim2.new(1, 0, 0, 106)
-                    row.Size   = UDim2.new(1, 0, 0, 30 + 106)
+                    panel.Size = UDim2.new(1, 0, 0, 118)
+                    row.Size   = UDim2.new(1, 0, 0, 32 + 118)
                 else
                     panel.Size = UDim2.new(1, 0, 0, 0)
-                    row.Size   = UDim2.new(1, 0, 0, 30)
+                    row.Size   = UDim2.new(1, 0, 0, 32)
                 end
             end))
 
@@ -1019,7 +1113,7 @@ function Library:Window(cfg)
         function tab:Divider()
             local f = new("Frame", {
                 Size = UDim2.new(1, 0, 0, 1),
-                BackgroundColor3 = Color3.fromRGB(40, 40, 40),
+                BackgroundColor3 = Theme.OutlineSoft,
                 BorderSizePixel = 0,
                 Parent = getParent(),
             })
@@ -1090,17 +1184,17 @@ function Library:Window(cfg)
 
     table.insert(win._conns, themeBtn.MouseButton1Click:Connect(function()
         local popup = new("Frame", {
-            Size = UDim2.new(0, 220, 0, 60),
-            Position = UDim2.new(0.5, -110, 0.5, -30),
-            BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+            Size = UDim2.new(0, 240, 0, 70),
+            Position = UDim2.new(0.5, -120, 0.5, -35),
+            BackgroundColor3 = Theme.Panel,
             BorderSizePixel = 0,
             Parent = gui,
         })
-        new("UICorner", { CornerRadius = UDim.new(0, 6) }, popup)
+        corner(popup, 8)
 
         new("TextLabel", {
-            Size = UDim2.new(1, -20, 0, 20),
-            Position = UDim2.new(0, 10, 0, 8),
+            Size = UDim2.new(1, -20, 0, 22),
+            Position = UDim2.new(0, 12, 0, 8),
             BackgroundTransparency = 1,
             Text = "Accent Color",
             TextColor3 = Theme.Text,
@@ -1111,8 +1205,8 @@ function Library:Window(cfg)
         })
 
         local close = new("TextButton", {
-            Size = UDim2.new(0, 20, 0, 20),
-            Position = UDim2.new(1, -26, 0, 8),
+            Size = UDim2.new(0, 22, 0, 22),
+            Position = UDim2.new(1, -28, 0, 8),
             BackgroundTransparency = 1,
             Text = "X",
             TextColor3 = Theme.TextDim,
@@ -1125,13 +1219,13 @@ function Library:Window(cfg)
         end))
 
         local hue = new("Frame", {
-            Size = UDim2.new(1, -20, 0, 10),
-            Position = UDim2.new(0, 10, 0, 34),
+            Size = UDim2.new(1, -24, 0, 12),
+            Position = UDim2.new(0, 12, 0, 40),
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BorderSizePixel = 0,
             Parent = popup,
         })
-        new("UICorner", { CornerRadius = UDim.new(0, 4) }, hue)
+        corner(hue, 6)
         new("UIGradient", {
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
@@ -1198,11 +1292,11 @@ function Library:Notify(text, duration)
     if not container then return end
 
     local frame = new("Frame", {
-        Size = UDim2.new(1, 0, 0, 38),
-        BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = Theme.Panel,
         BorderSizePixel = 0,
     }, container)
-    new("UICorner", { CornerRadius = UDim.new(0, 6) }, frame)
+    corner(frame, 6)
 
     new("TextLabel", {
         Size = UDim2.new(1, -24, 1, 0),
@@ -1222,6 +1316,7 @@ function Library:Notify(text, duration)
         BorderSizePixel = 0,
         Parent = frame,
     })
+    corner(bar, 2)
 
     task.delay(duration, function()
         tween(frame, { BackgroundTransparency = 1 }, 0.3)
