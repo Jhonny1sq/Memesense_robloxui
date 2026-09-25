@@ -3,7 +3,7 @@
     Memesense-styled Roblox UI library.
 
     Load:
-        local Library = loadstring(game:HttpGet("URL_TO_THIS_FILE"))()
+        local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jhonny1sq/Memesense_robloxui/refs/heads/main/source.lua"))()
 
     Use:
         local Win = Library:Window({
